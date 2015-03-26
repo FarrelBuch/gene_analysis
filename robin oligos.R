@@ -1,0 +1,120 @@
+# Robin Everts sent me list to confirm his snps that he was making oligos for.
+# https://mail.google.com/mail/u/0/#apps/from%3Arobin/n25/14c4de4861276b4d
+# Lets get it as a vector list
+cat("WELL
+		 TERM
+		 SNP_ID
+		 W1
+		 iPLEX
+		 rs11016916
+		 W1
+		 iPLEX
+		 rs7208422
+		 W1
+		 iPLEX
+		 rs4789536
+		 W1
+		 iPLEX
+		 rs12868666
+		 W1
+		 iPLEX
+		 rs4751143
+		 W1
+		 iPLEX
+		 rs11656744
+		 W1
+		 iPLEX
+		 rs910557
+		 W1
+		 iPLEX
+		 rs7095306
+		 W1
+		 iPLEX
+		 rs1048591
+		 W1
+		 iPLEX
+		 rs4751149
+		 W1
+		 iPLEX
+		 rs3819692
+		 W1
+		 iPLEX
+		 rs3761547
+		 W1
+		 iPLEX
+		 rs662041
+		 W1
+		 iPLEX
+		 rs10829665
+		 W1
+		 iPLEX
+		 rs2613519
+		 W1
+		 iPLEX
+		 rs1570892
+		 W1
+		 iPLEX
+		 rs3761549
+		 W1
+		 iPLEX
+		 rs11465475
+		 W1
+		 iPLEX
+		 rs542853
+		 W1
+		 iPLEX
+		 rs9317651
+		 W1
+		 iPLEX
+		 rs573370
+		 W1
+		 iPLEX
+		 rs74421417
+		 W1
+		 iPLEX
+		 rs75322567
+		 W1
+		 iPLEX
+		 rs11016988
+		 W1
+		 iPLEX
+		 rs4824747
+		 W1
+		 iPLEX
+		 rs75074888
+		 W1
+		 iPLEX
+		 rs7086320
+		 W1
+		 iPLEX
+		 rs12779483
+		 W1
+		 iPLEX
+		 rs199755049
+		 W1
+		 iPLEX
+		 rs7076124
+		 W1
+		 iPLEX
+		 rs8000556
+		 W1
+		 iPLEX
+		 rs9571740
+		 W1
+		 iPLEX
+		 rs488116
+		 W1
+		 iPLEX
+		 rs491299
+		 W1
+		 iPLEX
+		 rs1334011
+", file="robinoli") # for rs3819692 I had the add the letters since his original email just had the number
+robin.oli <- readLines("robinoli")
+robin.oli.pos <- regexpr(pattern = "rs[[:digit:]]+",robin.oli)
+robins.oligo.vector <- regmatches(robin.oli, robin.oli.pos)
+
+# Check Robin against our priorities
+length(robins.oligo.vector)
+
+lapply(list(tdtae=tdtae.snps, ever12=ever12.snps, foxp3=foxp3.snps, high.priority=jes.snp.illu, low=jes.snp.noillu, even.lower=jes.snp.noillu.butproxy), function(x) setdiff(x,robins.oligo.vector))
