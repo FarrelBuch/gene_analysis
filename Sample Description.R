@@ -17,7 +17,7 @@ require(reshape2)
 # some subjects were excluded from the analysis
 
 subj.296 <- PLINK.pedigree[,PtCode]
-subj.296 <- subj.296[-grep(pattern="^JLJ09006|^BJW18006|^DET10003|^FJB01117|^FKK24002|^GHP04013|^JEM04008|^JWT08002|^PXC08007", x=subj.296)] #Delete two members with pedigree ID JLJ09006 as there is no child in this family, delete 
+subj.296 <- subj.296[-grep(pattern="^JLJ09006|^BJW18006|^DET10003|^FJB01117|^FKK24002|^GHP04013|^JEM04008|^JWT08002|^PXC08007", x=subj.296)] #Delete two members with pedigree ID JLJ09006 as there is no child in this family, delete
 
 affec.296 <- affected[PtCode %chin% subj.296,]
 all.sub.296 <- all.subj[PtCode %chin% subj.296,]
@@ -44,6 +44,8 @@ n.fams <- length(unique(all.sub.samp[,family]))
 fam.composition <- all.sub.samp[,list(.N, relationships=str_c(relationship,collapse=", ")),by=family]
 fam.composition[,list(n=nr <- .N, perc=round(nr/n.fams,2)) , by=relationships]
 all.sub.samp[,.N,by=relationship]
+affected[OtherRRP=="Yes",list(PtCode, InstCode, OtherRRP, RltnshpOthr, FaCondylomata, FaCondyBef, FaOccupBef, FaOccupPast)]
+unique(affected$OtherRRP)
 
 
 
@@ -77,7 +79,7 @@ quantile(affec.samp[,follup.yr],c(0.20, 0.25, 0.5, 0.75, 0.80), na.rm=TRUE)
 ecdf.follup <- ecdf(affec.samp[,follup.yr])
 round(ecdf.follup(c(0.9, 1:10)),2)
 
-  # makes a table of ages and what cumulative percentage 
+  # makes a table of ages and what cumulative percentage
 age.percentile <- data.table(ages, perc.dx=round(ecdf.dxage(ages),2), perc.enrl=round(ecdf.enrolage(ages),2))
 age.percentile
 write.csv(age.percentile, file="age percentile sample.csv", row.names=FALSE)
@@ -120,7 +122,7 @@ aggr.compostion.count <- aggressive.matrix[,.N,by=list(trach, distal, surg, freq
 aggr.compostion.count
 
 #barplot raw metrics of aggressiveness
-melted.aggr<-melt(data=aggressive.matrix,id.vars="PtCode", value.name="aggressive") 
+melted.aggr<-melt(data=aggressive.matrix,id.vars="PtCode", value.name="aggressive")
 
 ggplot(melted.aggr, aes(x=variable,fill=aggressive, order = -as.numeric(aggressive))) + geom_bar()  + labs(title="Aggressiveness of clinical course",x = "clinical characteristic", y = "count of subjects") + theme_gray(22)
 

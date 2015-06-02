@@ -1,11 +1,13 @@
 # This script relies on "read genomics in.r" to read from GENOMICS and Google. At that stage it is either ready for use by this script or it is ready for encryption.
-source("read genomics in.r")
+source(file = "read genomics in.r")
 #load(file="V:/GRRPsnapshot.RData")#if I need to load from a encrypted file
 #load(file="D:/Users/Farrel/My Documents/RRPGenSucep/GRRPsnapshot.RData")#if I need to load office computer
 require(data.table)
 require(stringr)
 require(zoo)
 require(reshape2)
+
+#todo Something is missing from the first row or a row of specimens that has NA in it and it is messing up the IDateTime transformation
 
 
 # create data tables with names and keys------------------
@@ -22,6 +24,12 @@ rpdna <- data.table(rpdna)
 setnames(x=rpdna,old="rpdnanr",new="nuc.ac.nr")
 PLINK.pedigree <- data.table(PLINK.pedigree)
 setnames(x=PLINK.pedigree,old=c("V1","SubjLastName"),new=c("nuc.ac.nr","PtCode"))
+rpinfinwrk.dt <- data.table(rpinfinwrk)
+remove(rpinfinwrk)
+setnames(x=rpinfinwrk.dt, old=c("Sample ID", "rpdnanr"), new=c("sample.id", "nuc.ac.nr"))
+rpinfinwrk.dt[, ':='(sample.id = paste0(chipnr, "_", region),
+										 assaystarted=as.IDate(assaystarted, origin="1899-12-30"))]
+
 sapply(mget(ls()[sapply(mget(ls(), .GlobalEnv),is.data.table)], .GlobalEnv),dim)
 
 
@@ -35,6 +43,7 @@ setkey(hpv.early, pt.code)
 setkey(hpv.provtous, pt.code)
 setkey(rpdna,nuc.ac.nr)
 setkey(PLINK.pedigree,PtCode)
+setkey(rpinfinwrk.dt, nuc.ac.nr)
 setkey(approved.sat,InstCode)
 
 
@@ -52,20 +61,24 @@ specimens[hum.sub.nr==37292, SubjLastName:="RYS16022PT"]
 psga[,FJBcode := paste0(FJBcode,"PT")]
 setkey(psga, FJBcode)
 
+# RP1392 and RP1393 are both whole blood from RYS16015PT received 2010-11-15 but suspect 1393 is LRNXP #TODO confirm this is true
+specimens[nuc.ac.nr==1393, TissCode:="LRNXP"]
+
 
 # clean up collaborator's table to only include those relevant to us---------------
 collab.codes <- sort(unique(c(rrplog[,CollabCode],rrp.related[,CollabCode])))
 collab <- collab[collab.codes]
 remove(collab.codes)
 collab[is.na(Country),]
-# Vanderbilt got put in twice as an insitution, 
+# Vanderbilt got put in twice as an insitution,
 # deal with it in the collaborators table
 collab["CTW",InstCode:="VUMC"]
 
 # deal with in the rrplog
-rrplog[InstCode=="CHV", ':='(InstCode="VUMC", 
+rrplog[InstCode=="CHV", ':='(InstCode="VUMC",
                              InstName="Vanderbilt University Medical Center")]
 unique(rrplog[grep("V", InstCode), list(InstCode, InstName)])
+
 
 # add city and country to each rrplog row------------------------
 
@@ -74,9 +87,9 @@ setkey(collab,Country)
 collab["United States of America",Country:="USA"]
 setkey(collab,CollabCode)
 rrplog[collab, country:=Country] # adds a column to the rrplog with the hpv type, lookup by assignment
-rrplog[collab, c("city", "zip") := list(City, ZipCode) ] # 
+rrplog[collab, c("city", "zip") := list(City, ZipCode) ] #
 rrplog[CollabCode=="FB3",list(PtCode,country,zip)] #multiple assignment in one line
-setkey(rrplog, PtCode) 
+setkey(rrplog, PtCode)
 # FJB collab were acquired through patient support group and we must look to psga for location
 psga[grep(pattern="United States of Ame", x=PTCntry, ignore.case=TRUE), PTCntry := "USA"]
 rrplog[psga, c("country", "city", "zip") := list(PTCntry, PTCity, PTZip) ] # multiple lookup and assignment in one line
@@ -84,8 +97,8 @@ rrplog[psga, c("country", "city", "zip") := list(PTCntry, PTCity, PTZip) ] # mul
 
 # merge HPV type data-------------------------
 
-# TODO merge the different sources of HPV typing data 
-# as of Saturday, 26 Oct 2013 14:41 there is 
+# TODO merge the different sources of HPV typing data
+# as of Saturday, 26 Oct 2013 14:41 there is
 # 1) Joseph Donfack hpv.early, done in the mid 00's
 # 2) hpv.provtous (hpv typing that was provided to us)
 # 3) calls.by.ABI.cluster
@@ -131,7 +144,7 @@ rrplog[grepl("999",AOPtIncomeY),AOPtIncomeY:=NA]
 rrplog[grepl("9999",YearDx),YearDx:=NA]
 rrplog[,max.incom:=pmax(IncomeYBef, IncomeYPast, AOPtIncomeY,na.rm=TRUE)]
 #  TODO At one stage it appears as if any income of less than $1000 in the USA
-#  was declared NA. At this stage I do not have countries in the rrplog 
+#  was declared NA. At this stage I do not have countries in the rrplog
 #  take care of this later if it does indeed need to be taken care of
 #  rrplog[max.incom<1000&Country=="USA", max.incom:=NA]
 rrplog[grepl("999",PeopleNrBef),PeopleNrBef:=NA]
@@ -167,7 +180,7 @@ rrplog[,moth.dob:=as.IDate(moth.dob)]
 rrplog[,moth.dob]
 
 date.cols.rrp <- c("SpecDate", "DOB", "PostEnrollment12MonthUpdateFormMailedOn")
-for(date.col in date.cols.rrp) {rrplog[,date.col:=as.IDate(rrplog[[date.col]]),with=FALSE]}# tip: this is how to perform a function on multiple columns of a data.table at the same time. It is quicker than lapply
+for(date.col in date.cols.rrp) {rrplog[,date.col:=as.IDate(rrplog[[date.col]]),with=FALSE]}# tip: this is how to perform a function on multiple columns of a data.table at the same time. It is quicker than lapply #tip
 clin.upd[,ClinUpdDate:=as.IDate(ClinUpdDate)]
 clin.upd[,c("kbddateclin.upd","kbdtimeclin.upd"):=IDateTime(KbdDate)]
 specimens[,c("kbddatespecim","kbdtimespecim"):=IDateTime(KbdDate)]
@@ -175,9 +188,22 @@ rpdna[,specdate:=as.IDate(specdate, origin="1899-12-30")]
 rpdna[,extractdate:=as.IDate(extractdate, origin="1899-12-30")]
 setnames(x=rpdna,old=c("specdate","extractdate"),new=c("spectophotom.date","DNAextract.date"))
 
+#now that we have transformed date fields, correct typographical errors
+rrplog[PtCode=="RYS16028PT", DOB:=as.IDate("1974-08-28")]#error corrected by email from Riaz Seedat subject:Please check DOB and year of diagnosis on RYS16028PT https://mail.google.com/mail/u/0/#inbox/14cbd9b96bd2f34d
 
 
-affected <- clin.upd[rrplog]
+# generate some useful fields------------------
+# quality DNA has a A260/A280 of 1.8, low, but not high, ratio indicative of a problem
+rpdna[absratio>1.8, absratiolow := 0]
+rpdna[absratio<=1.8, absratiolow := 1.8-absratio]
+# need to create a column in specimens that specifies the yield of DNA in µg
+rpdna[,dnayieldmicrog:=dnaconcngpmicl*volumemicl*0.001]
+
+
+affected <- merge(clin.upd[,.SD, .SDcol=-kbdtimeclin.upd],rrplog, all.y = TRUE )
+clin.upd[,.SD, .SDcol=-kbdtimeclin.upd]
+key(clin.upd)
+key(rrplog)
 
 # # remove illegitimates-----------------
 ####
@@ -200,9 +226,15 @@ specimens <- specimens[!reject.instit,]
 # some specimens are listed in the specimens table but not present in the corresponding nucleic acid table
 # I think that they were entered in the HSlog which wrote them to specimens and then when removed from HSlog in Genomics they remained in the specimens table
 
+
 setkey(affected,PtCode)# put the index back as expecting
 setkey(specimens,SubjLastName)
 
+# GJC03001 is duplicate of GJC03005 and therefore GJC03001 must be deleted post hoc
+# see email subject:GJC03001 and GJC03005 with Graeme Copley
+specimens <- specimens[!SubjLastName %chin% c("GJC03001PT", "GJC03001MO")]
+affected <- affected[PtCode!="GJC03001PT"]
+specimens[nuc.ac.nr==257]
 
 # neaten the data-------------
 # InstCountry has some values as United States of America and also has USA, combine has USA
@@ -214,12 +246,15 @@ specimens[,family:=str_sub(SubjLastName,end=8L)]
 # need a column that specifies type of relationship
 specimens[,relationship:=str_sub(SubjLastName,start=9L)]
 specimens[grep("^S",relationship),relationship:="SI"]#each sibling had a different suffix, make them all SI
-# need to add country to each affected row
+# do the relationship thing in specs.post.crash as well
+specs.post.crash[,relationship:=str_sub(SubjLastName,start=9L)]#there were no siblings after 2013-11-21
 
 
 
 
-# Need to get one union list of affected plus relatives with all the affected information therein------------ 
+
+
+# Need to get one union list of affected plus relatives with all the affected information therein------------
 #cat(shQuote(names(specimens)), sep=", ")# gives me a list of all the column names so that I can use it in statement
 same.col <- intersect(names(specimens),names(affected))
 col.in.rrplog <- setdiff(names(affected),names(specimens))
@@ -230,14 +265,20 @@ specimens["FB301004PT",RecdDate:=as.Date("2010-01-14")]
 
 # GENOMICS Database crashed 2013-11-21, get later specimens in------------------
 l = list(specs.post.crash, specimens)
-l = list(specs.post.crash, specimens[,c(1:26, 28, 29), with=FALSE])# kbdtimespecim (27th column was messing with results)
+l = list(specimens[,c(1:26, 28, 29), with=FALSE], specs.post.crash)# kbdtimespecim (27th column was messing with results)
 specimens <- rbindlist(l, fill = TRUE)
+
+
+
+
+
+
 
 # need a union table of subject to feed numbers to regulators--------------
 affec.demograph <- affected[,list(PtCode,Sex, Ethnicity, Race, DOB, SpecDate)]
 setkey(affec.demograph,PtCode)
 setkey(specimens,SubjLastName)
-all.subj.byspec <- affec.demograph[specimens]#HereIAM TODO this now has to become the basis of seeing our specimens holdings
+all.subj.byspec <- affec.demograph[specimens]
 setkey(all.subj.byspec,nuc.ac.nr)
 all.subj.byspec <- merge(x=all.subj.byspec,y=rpdna,all.x=TRUE)#we need all the rows from all.subj.byspec but we do not need specimens that have been excluded such as Patrick Froelich PAF and Brazil
 setkey(all.subj.byspec,PtCode)
@@ -246,7 +287,7 @@ setkey(all.subj.byspec,PtCode,enroll.date)# we have now sorted by PtCode and enr
 setkey(all.subj.byspec,PtCode)#now they should remain sorted but the only key is Ptcode, so when we issue unique() command it will take the first row
 
 all.subj <- unique(all.subj.byspec)#we had duplicate entries since 2 specimens from the same subject generated two rows, one for each specimen
-all.subj[,c("TissCode", "comments",  "slotnr",  "boxnr",  "freezernr",  "spectophotom.date",  "extractby",  "DNAextract.date",  "volumemicl",  "dilfactor",  "absratio",  "abs280",  "abs260",  "dnaconcngpmicl",  "hsnr",  "hum.sub.nr",  "nuc.ac.nr"):=NULL]#do not want specification of tissue here in listing of subjects 
+all.subj[,c("TissCode", "comments",  "slotnr",  "boxnr",  "freezernr",  "spectophotom.date",  "extractby",  "DNAextract.date",  "volumemicl",  "dilfactor",  "absratio",  "abs280",  "abs260",  "dnaconcngpmicl",  "hsnr",  "hum.sub.nr",  "nuc.ac.nr", "absratiolow"):=NULL]#do not want specification of tissue here in listing of subjects
 # use the RRPlog DOB as most accurate, where there is no RRPlog DOB use the SubjDOB from the specimens log, once used, get rid of SubjDOB from Specimens
 all.subj[is.na(DOB)&!is.na(SubjDOB),DOB:=SubjDOB]
 all.subj[,SubjDOB:=NULL]
@@ -257,7 +298,7 @@ all.subj[str_sub(PtCode, start = 9L, end = 9L)=="S"&is.na(DOB)&grepl("[[:digit:]
 
 
 
-all.subj[,age:=round(as.numeric(pmin(SpecDate, RecdDate,CollectDate,na.rm =TRUE)-DOB)/365.25,1)]# TODO create a collective enrollment date which would be the minimum of SpecDate (from the rrplog) and the RecdDate and CollectDate (from specimens table). You would think SpecDate and CollectDate would always be the same but that will be a separate investigation, then use the collective enrollment date for future calculations.
+all.subj[,age:=round(as.numeric(pmin(SpecDate, RecdDate,CollectDate,na.rm =TRUE)-DOB)/365.25,1)]
 all.subj[,child.adult:=cut(age,breaks=c(-Inf,18.0,+Inf),labels=c("child","adult"))]#classify into adult and child
 all.subj[str_sub(PtCode,start=9L) %chin% c("MO", "FA", "MGM", "MGF"), child.adult:="adult"]# many grand parents or parents do not have dob but we know they are adult
 all.subj[str_sub(PtCode,end=8L)=="GHP04015",child.adult:="adult"]# complicated family laid out in email GHP04015 missing parent's questionnaire dated 2009-02-17
@@ -286,11 +327,11 @@ setkey(all.subj,PtCode)
 
 # Work on parsing affected table rrplog + clin.upd---------------
 # previously done in #Amalgamate the Follow Up data with the enrollment data in RRPDataIntegrity
-affected[,LastFU:=pmax(ClinUpdDate,SpecDate,na.rm=TRUE)] # LastFU for Last Follow up date 
+affected[,LastFU:=pmax(ClinUpdDate,SpecDate,na.rm=TRUE)] # LastFU for Last Follow up date
 
 #Tracheotomy
 
-# fix problem of NA in TrachStat. It causes NA to permeate all fields. 
+# fix problem of NA in TrachStat. It causes NA to permeate all fields.
 # if anniversary update not available then will assign value that was present at enrollment
 affected[is.na(TrachStat),TrachStat:= Tracheostomy]
 # This problem all seems to stem from GHP04005PT having status as "Used to Have" instead of "Used to have" just a capitalization issue
