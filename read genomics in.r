@@ -43,19 +43,19 @@ load(file="D:/Users/Farrel/My Documents/RRPGenSucep/GRRPsnapshot.RData")
 
 # options(RCurlOptions = list(capath = system.file("CurlSSL", "cacert.pem", package = "RCurl"), ssl.verifypeer = FALSE))
 # #WARNING: this would prevent curl from detecting a 'man in the middle' attack
-# sheets.con = getGoogleDocsConnection(getGoogleAuth(login = getOption("GoogleDocsPassword"),service ="wise"))#the username and password is coming from the profile
-# hpv.google=getWorksheets("hpv type",sheets.con)#hpv.google is the HPV typing data that was stored in Google
-# hpv.early <- sheetAsMatrix(hpv.google$"Sheet 1",header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE) #Get one sheet that is what was typed in early years by Joseph Donfack using allele specific PCR and restriction fragrment length polymorphism
-# hpv.provtous <- sheetAsMatrix(hpv.google$"provided to us",header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE) #Get one sheet that is what other offices or labs provided to us for HPV typing
+# sheets.con = getGoogleDocsConnection(getGoogleAuth(login = getOption("GoogleDocsPassword"),service ="wise"))
+# hpv.google=getWorksheets("hpv type",sheets.con)
+# hpv.early <- sheetAsMatrix(hpv.google$"Sheet 1",header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE)
+# hpv.provtous <- sheetAsMatrix(hpv.google$"provided to us",header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE)
 #
-# rpdna.google=getWorksheets("rpdna",sheets.con)#rpdna is the extracted DNA details and location from each is stored in Google
+# rpdna.google=getWorksheets("rpdna",sheets.con)
 # rpdna<-sheetAsMatrix(rpdna.google$dnastock,header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE)
-# mergeddata3=getWorksheets("mergeddata3",sheets.con)#spreadsheet supplied to Jurg Ott to run PLINK on the 296 samples that first underwent genotyping
+# mergeddata3=getWorksheets("mergeddata3",sheets.con)
 # PLINK.pedigree<-sheetAsMatrix(mergeddata3$"Main Sheet",header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE)
-# rpinfinwrk.google <- getWorksheets("rpinfinwrk",sheets.con)#rpinfinwrk is the workflow that we used to do the infinium assay in preparation for the HumanOmni1-Quad DNA analysis
+# rpinfinwrk.google <- getWorksheets("rpinfinwrk",sheets.con)
 # rpinfinwrk<-sheetAsMatrix(rpinfinwrk.google$"Main Sheet",header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE)
 #
-# specs.post.crash.google <- getWorksheets("specimens post database crash",sheets.con) # "specimens post database crash" are the specimens received after GENOMICS went down and now stored in Google
+# specs.post.crash.google <- getWorksheets("specimens post database crash",sheets.con)
 # specs.post.crash <- as.data.table(sheetAsMatrix(specs.post.crash.google$Sheet1, header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE))
 # specs.post.crash[,`:=`(nuc.ac.nr = as.integer(nuc.ac.nr),
 #                        CollectDate = as.Date(CollectDate,origin="1899-12-30"),
@@ -64,19 +64,32 @@ load(file="D:/Users/Farrel/My Documents/RRPGenSucep/GRRPsnapshot.RData")
 # setkey(specs.post.crash, SubjLastName)
 #
 # # Read Satellite Hospitals
-# satellites.google=getWorksheets("Satellite Hospitals",sheets.con) #satellites.google is a listing of each satellite to link PI to institution and date of IRB approval. Spreadsheet held in  Google
-# satellites <- as.data.table(sheetAsMatrix(satellites.google$Hospitals,header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE)) #satellites is a data.table of each satellite to link PI to institution and date of IRB approval. Spreadsheet held in  Google
+# satellites.google=getWorksheets("Satellite Hospitals",sheets.con)
+# satellites <- as.data.table(sheetAsMatrix(satellites.google$Hospitals,header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE))
 # satellites[,IRBApproval := as.IDate(IRBApproval,origin="1899-12-30")]
 # setnames(satellites, old="Hospital Name", new="hospital")
-# approved.sat  <- satellites[!is.na(IRBApproval),list(PI, PI.first,  InstCode, hospital, IRBApproval, City, Country, zip, FWA, ArmstongPap)] #approved.sat is Institutional Review Board (IRB) approved satellites
+# approved.sat  <- satellites[!is.na(IRBApproval),list(PI, PI.first,  InstCode, hospital, IRBApproval, City, Country, zip, FWA, ArmstongPap)]
 # rm(satellites.google)
 #
 # # Read Collaborators curated from Farrel
-# coinvest.google=getWorksheets("coinvestigator contact details",sheets.con) #coinvest.google is a listing of each prinicipal investigator no matter how much enrollment. It was generated from Google Contacts
-# coinvest <- as.data.table(sheetAsMatrix(coinvest.google$coinvest,header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE)) #coinvest is a data.table of each pi to link PI to emial and held in  Google
-
-# googlesheets way #HEREIAM annotate this all from above
+# coinvest.google=getWorksheets("coinvestigator contact details",sheets.con)
+# coinvest <- as.data.table(sheetAsMatrix(coinvest.google$coinvest,header=TRUE, as.data.frame=TRUE, trim=TRUE, stringsAsFactors=FALSE))
 library(googlesheets)
+
+# Annotations, Annotations
+
+# annotations about data tables that are about to be created
+# hpv.early: Get one sheet that is what was typed in early years by Joseph Donfack using allele specific PCR and restriction fragrment length polymorphism
+# hpv.provtous: #Get one sheet that is what other offices or labs provided to us for HPV typing
+# rpdna: rpdna is the extracted DNA details and location from each is stored in Google
+# PLINK.pedigree: #spreadsheet supplied to Jurg Ott to run PLINK on the 296 samples that first underwent genotyping
+# rpinfinwrk: rpinfinwrk is the workflow that we used to do the infinium assay in preparation for the HumanOmni1-Quad DNA analysis
+# specs.post.crash: "specimens post database crash" are the specimens received after GENOMICS went down and now stored in Google
+# satellites is a data.table of each satellite to link PI to institution and date of IRB approval. Spreadsheet held in  Google
+# approved.sat is Institutional Review Board (IRB) approved satellites
+# coinvest is a data.table of each pi to link PI to emial and held in  Google, # is a listing of each prinicipal investigator no matter how much enrollment. It was generated from Google Contacts,
+
+
 hpv.type <- gs_title("hpv type")
 hpv.early <- data.table(gs_read(ss = hpv.type , ws = "Sheet 1"))
 hpv.provtous <- data.table(gs_read(ss = hpv.type , ws = "provided to us"))

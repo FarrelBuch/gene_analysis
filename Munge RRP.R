@@ -23,10 +23,10 @@ rrp.related <- data.table(rrp.related)
 rpdna <- data.table(rpdna)
 setnames(x=rpdna,old="rpdnanr",new="nuc.ac.nr")
 PLINK.pedigree <- data.table(PLINK.pedigree)
-setnames(x=PLINK.pedigree,old=c("V1","SubjLastName"),new=c("nuc.ac.nr","PtCode"))
+setnames(x=PLINK.pedigree,old=c("X","SubjLastName"),new=c("nuc.ac.nr","PtCode"))
 rpinfinwrk.dt <- data.table(rpinfinwrk)
 remove(rpinfinwrk)
-setnames(x=rpinfinwrk.dt, old=c("Sample ID", "rpdnanr"), new=c("sample.id", "nuc.ac.nr"))
+setnames(x=rpinfinwrk.dt, old=c("Sample.ID", "rpdnanr"), new=c("sample.id", "nuc.ac.nr"))
 rpinfinwrk.dt[, ':='(sample.id = paste0(chipnr, "_", region),
 										 assaystarted=as.IDate(assaystarted, origin="1899-12-30"))]
 
